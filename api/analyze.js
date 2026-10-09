@@ -7,7 +7,7 @@ export default async function handler(req, res) {
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-        return res.status(500).json({ error: 'API key is missing on server.' });
+        return res.status(500).json({ error: 'ไม่พบ GEMINI_API_KEY ใน Vercel Environment Variables' });
     }
 
     const systemPrompt = `
@@ -49,6 +49,14 @@ export default async function handler(req, res) {
         });
 
         const apiData = await response.json();
+
+        if (!response.ok) {
+            return res.status(response.status).json({ 
+                error: 'Gemini API Error', 
+                details: apiData.error?.message || 'Unknown error' 
+            });
+        }
+
         const jsonText = apiData.candidates[0].content.parts[0].text;
         const parsedJson = JSON.parse(jsonText);
 
