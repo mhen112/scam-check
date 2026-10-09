@@ -113,34 +113,7 @@
     </div>
 
     <script>
-        async function analyzeData() {
-            const input = document.getElementById('inputText').value.trim();
-            if (!input) return alert('กรุณาป้อนข้อมูลที่ต้องการตรวจสอบ');
-
-            const loading = document.getElementById('loading');
-            const dashboard = document.getElementById('dashboard');
-            const submitBtn = document.getElementById('submitBtn');
-
-            loading.classList.remove('hidden');
-            dashboard.classList.add('hidden');
-            submitBtn.disabled = true;
-
-            try {
-                const response = await fetch('/api/analyze', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ data: input })
-                });
-
-                const result = await response.json();
-                renderDashboard(result);
-            } catch (err) {
-                alert('เกิดข้อผิดพลาดในการเชื่อมต่อระบบวิเคราะห์: ' + err.message);
-            } finally {
-                loading.classList.add('hidden');
-                submitBtn.disabled = false;
-            }
-        }
+       
 
         function renderDashboard(data) {
             document.getElementById('resInput').textContent = data.input_information || 'ไม่มีข้อมูล';
@@ -169,7 +142,6 @@
                 levelIcon.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-500"></i>';
                 scoreBar.className = 'h-full transition-all duration-1000 bg-emerald-500';
             }
-
             // Render Lists
             renderList('resSignals', data.scam_signals);
             renderList('resReasons', data.risk_reasons);
@@ -179,7 +151,7 @@
             const recContainer = document.getElementById('resRecommendation');
             recContainer.innerHTML = `
                 <p>• ${data.recommendation?.actions || 'ไม่มีข้อแนะนำเพิ่มเติม'}</p>
-                <p class="text-rose-400 font-semibold">• ${data.recommendation?.warning || 'ห้ามคลิกลิงก์ ให้ข้อมูลส่วนตัว หรือข้อมูลทางการเงินโดยเด็ดขาด'}</p>
+                <p class="text-rose-400 font-semibold">• ${data.recommendation?.warning || 'ห้ามคลิกลิงก์ ให้ข้อมูลส่วนตัว หรือข้อมูลทางการเงินโดยเด็ดขาด'}</p>    
             `;
 
             document.getElementById('resSources').textContent = data.evidence_sources || 'ไม่พบข้อมูลเพียงพอสำหรับการยืนยัน';
