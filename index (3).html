@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ตรวจสอบมิจฉาชีพ - Scam Risk Checker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EFF2EE; --card:#FFFFFF; --ink:#12302B; --muted:#5A6F6A; --line:#D3DCD7; --brand:#0F6E64;
+  --safe:#1F7A4D; --safe-bg:#E3F3EA;
+  --warn:#A8650A; --warn-bg:#FBEFD9;
+  --high:#B3261E; --high-bg:#FBE4E1;
+  --lvl:#5A6F6A; --lvl-bg:#E6ECE8;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Noto Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.65;font-size:16px}
+.wrap{max-width:1040px;margin:0 auto;padding:20px 16px 56px}
+header.top{padding:18px 0 8px}
+header.top h1{margin:0;font-size:1.6rem;font-weight:800;letter-spacing:-.01em}
+header.top p{margin:4px 0 0;color:var(--muted);max-width:60ch}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
+.card h2{margin:0 0 12px;font-size:1.05rem;font-weight:700}
+.card h2 small{color:var(--muted);font-weight:400;margin-left:6px}
+form.card{margin-top:14px;display:grid;gap:14px}
+.fields{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+label{display:block;font-weight:500;font-size:.92rem;margin-bottom:4px}
+textarea,input[type=text]{width:100%;font:inherit;color:inherit;background:#FAFBFA;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+textarea{min-height:130px;resize:vertical}
+textarea:focus,input:focus,button:focus-visible,a:focus-visible{outline:3px solid #7CC4BB;outline-offset:1px}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:11px 20px;cursor:pointer}
+.btn-main{background:var(--brand);color:#fff}
+.btn-main:hover{background:#0B5A52}
+.btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.err{color:var(--high);font-weight:500;min-height:1.4em;margin:0}
+#result{display:none;margin-top:22px}
+#result.on{display:block}
+
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(260px,380px) 1fr;gap:24px;align-items:center;border-color:var(--lvl);border-width:2px;background:var(--lvl-bg)}
+.hero.safe{--lvl:var(--safe);--lvl-bg:var(--safe-bg)}
+.hero.warn{--lvl:var(--warn);--lvl-bg:var(--warn-bg)}
+.hero.high{--lvl:var(--high);--lvl-bg:var(--high-bg)}
+.gauge{position:relative;width:100%;max-width:380px;margin:0 auto}
+.gauge svg{width:100%;height:auto;display:block}
+.gauge .track{stroke:rgba(0,0,0,.1)}
+.gauge .fill{stroke:var(--lvl);transition:stroke-dashoffset 1.1s cubic-bezier(.2,.8,.2,1)}
+.gauge .num{position:absolute;left:0;right:0;bottom:2px;text-align:center}
+.gauge .num b{display:block;font-size:4.2rem;line-height:1;font-weight:800;color:var(--lvl)}
+.gauge .num span{font-size:.85rem;color:var(--muted)}
+.badge{display:inline-flex;align-items:center;gap:8px;background:var(--lvl);color:#fff;font-weight:800;font-size:1.25rem;padding:6px 16px;border-radius:999px}
+.hero h2{font-size:1.05rem;margin:14px 0 6px}
+.hero p{margin:0 0 8px}
+.bar{height:12px;border-radius:999px;background:rgba(0,0,0,.1);overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;width:0;background:var(--lvl);transition:width 1.1s cubic-bezier(.2,.8,.2,1)}
+.scale{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-top:4px}
+
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:14px}
+.full{grid-column:1/-1}
+dl.kv{margin:0;display:grid;grid-template-columns:9em 1fr;gap:8px 12px}
+dl.kv dt{color:var(--muted)}
+dl.kv dd{margin:0;word-break:break-all}
+.none{color:var(--muted);font-style:italic}
+ul.list{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+ul.list li{border-left:4px solid var(--line);padding:2px 0 2px 12px}
+ul.list li.hit{border-left-color:var(--high)}
+ul.list li.mid{border-left-color:var(--warn)}
+ul.list li b{display:block}
+ul.list li span{color:var(--muted);font-size:.93rem}
+ul.list li em{font-style:normal;background:#F2EFE3;padding:0 4px;border-radius:4px;font-size:.88rem}
+.tag{display:inline-block;font-size:.78rem;border:1px solid var(--line);border-radius:6px;padding:0 6px;margin-left:6px;color:var(--muted);font-weight:400}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:520px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;font-size:.93rem}
+th{color:var(--muted);font-weight:500}
+td a{color:var(--brand);font-weight:500;margin-right:10px;white-space:nowrap}
+.note{background:#F5F7F5;border:1px dashed var(--line);border-radius:10px;padding:10px 12px;font-size:.92rem;color:var(--muted);margin-top:12px}
+.donts{background:var(--high-bg);border-radius:10px;padding:10px 14px;margin:0 0 12px;font-weight:500}
+ol.steps{margin:0;padding-left:1.3em;display:grid;gap:6px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.split > div{border:1px solid var(--line);border-radius:10px;padding:12px}
+.split h3{margin:0 0 6px;font-size:.95rem}
+footer{margin-top:28px;color:var(--muted);font-size:.85rem}
+
+@media (max-width:760px){
+  .fields,.grid,.split,.hero{grid-template-columns:1fr}
+  dl.kv{grid-template-columns:1fr;gap:0}
+  dl.kv dd{margin-bottom:8px}
+  .gauge .num b{font-size:3.4rem}
+}
+@media (prefers-reduced-motion:reduce){.gauge .fill,.bar i{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>ตรวจสอบมิจฉาชีพ</h1>
+    <p>วางข้อความ ลิงก์ เบอร์โทร หรือเลขบัญชีที่สงสัย ระบบจะประเมินระดับความเสี่ยงให้ทันที ทำงานในเครื่องของคุณ ไม่ส่งข้อมูลไปที่ไหน</p>
+  </header>
+
+  <form class="card" id="form" autocomplete="off">
+    <div>
+      <label for="msg">ข้อความที่ได้รับ</label>
+      <textarea id="msg" placeholder="วางข้อความจาก SMS, LINE, อีเมล หรือ Facebook ที่นี่"></textarea>
+    </div>
+    <div class="fields">
+      <div><label for="url">ลิงก์ / URL</label><input type="text" id="url" placeholder="เช่น https://example.com/..."></div>
+      <div><label for="sender">ชื่อผู้ส่ง / ชื่อผู้ใช้</label><input type="text" id="sender" placeholder="เช่น เจ้าหน้าที่ฝ่ายบริการ"></div>
+      <div><label for="phone">เบอร์โทรศัพท์</label><input type="text" id="phone" placeholder="เช่น 081-234-5678"></div>
+      <div><label for="acct">เลขบัญชีธนาคาร</label><input type="text" id="acct" placeholder="เช่น 123-4-56789-0"></div>
+    </div>
+    <p class="err" id="err" role="alert"></p>
+    <div class="actions">
+      <button type="submit" class="btn-main">ตรวจสอบความเสี่ยง</button>
+      <button type="button" class="btn-ghost" id="clear">ล้างข้อมูล</button>
+    </div>
+  </form>
+
+  <main id="result" aria-live="polite"></main>
+
+  <footer>เครื่องมือนี้เป็นการประเมินเบื้องต้นด้วยกฎในเบราว์เซอร์ ไม่ใช่การยืนยันจากหน่วยงานทางการ</footer>
+</div>
+
+<script>
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const NONE = '<span class="none">ไม่มีข้อมูล</span>';
+const ARC = 282.74; // pi * 90
+
+/* ---------- rule sets ---------- */
+const TEXT_RULES = [
+  {id:'urgent', w:12, label:'เร่งรัดให้ตัดสินใจ', desc:'มิจฉาชีพมักกดดันให้รีบทำก่อนที่คุณจะมีเวลาคิดหรือตรวจสอบ',
+   re:/ด่วน|ภายใน\s*\d+\s*(ชั่วโมง|ชม|นาที|วัน)|ทันที|วันนี้เท่านั้น|หมดเขต|ระงับ(บัญชี|การใช้งาน)|ถูก(ล็อก|ระงับ|อายัด)|อายัด|urgent|immediately|suspended/i},
+  {id:'otp', w:28, label:'ขอรหัส OTP / PIN / รหัสผ่าน', desc:'ธนาคารและหน่วยงานจริงไม่ขอรหัสเหล่านี้ทางข้อความหรือโทรศัพท์',
+   re:/otp|รหัส\s*(ผ่าน|ยืนยัน|pin|ลับ)|\bpin\b|password|cvv|เลขหลังบัตร|รหัส\s*6\s*หลัก/i},
+  {id:'money', w:18, label:'ให้โอนเงิน / จ่ายค่าธรรมเนียม', desc:'การขอให้โอนเงินล่วงหน้าเพื่อรับสิ่งของ เงิน หรือปลดล็อกบัญชี เป็นรูปแบบที่พบบ่อย',
+   re:/โอนเงิน|โอนมัดจำ|มัดจำ|ค่าธรรมเนียม|ค่าดำเนินการ|ค่าจัดส่ง.*โอน|ชำระ(เงิน)?ทันที|โอนมาที่|โอนเข้าบัญชี|ยืนยันตัวตน.*โอน/i},
+  {id:'authority', w:20, label:'แอบอ้างหน่วยงาน / เจ้าหน้าที่', desc:'อ้างเป็นตำรวจ ศาล DSI สรรพากร ธนาคาร หรือขนส่ง เพื่อสร้างความน่าเชื่อถือหรือความกลัว',
+   re:/ตำรวจ|ดีเอสไอ|\bdsi\b|ศาล|อัยการ|ปปง|สรรพากร|กรมศุลกากร|ศุลกากร|เจ้าหน้าที่(ธนาคาร|ฝ่าย|กรม)|ธนาคาร.*แจ้ง|ไปรษณีย์|พัสดุ.*(ตกค้าง|ติดขัด)|การไฟฟ้า|ประกันสังคม|กรมที่ดิน/i},
+  {id:'threat', w:22, label:'ขู่ให้กลัว', desc:'มีการอ้างหมายจับ คดี ฟอกเงิน หรือการดำเนินคดี เพื่อให้ตกใจและทำตามคำสั่ง',
+   re:/หมายจับ|หมายเรียก|ฟอกเงิน|ดำเนินคดี|ฟ้องร้อง|คดีอาญา|ผิดกฎหมาย|ถูกอายัด|ยึดทรัพย์|เกี่ยวข้องกับ.*คดี/i},
+  {id:'prize', w:20, label:'อ้างว่าถูกรางวัล / แจกฟรี', desc:'ข้อเสนอที่ดีเกินจริงเป็นเหยื่อล่อที่พบบ่อย',
+   re:/ถูกรางวัล|ยินดีด้วย|รับรางวัล|แจกเงิน|แจกฟรี|รับฟรี|ได้รับสิทธิ์|สิทธิ์พิเศษ|คูปองฟรี|เงินคืน.*คลิก|ลุ้นรางวัล/i},
+  {id:'job', w:18, label:'ชวนทำงาน / หารายได้ง่าย', desc:'งานง่าย รายได้สูง ไม่ต้องมีประสบการณ์ มักนำไปสู่การให้โอนเงินหรือหลอกลงทุน',
+   re:/งานเสริม|รายได้\s*(ต่อวัน|วันละ)|ทำงานที่บ้าน|กดไลก์|กดถูกใจ|รีวิวสินค้า.*รายได้|ไม่ต้องมีประสบการณ์|รายได้หลัก(พัน|หมื่น)|part\s*time.*รายได้/i},
+  {id:'invest', w:20, label:'ชวนลงทุนผลตอบแทนสูง', desc:'การรับประกันกำไรหรือผลตอบแทนสูงผิดปกติเป็นสัญญาณสำคัญของการหลอกลงทุน',
+   re:/การันตี|รับประกัน(กำไร|ผลตอบแทน)|กำไร.*(ทุกวัน|\d+\s*%)|ผลตอบแทน.*\d+\s*%|คริปโต|crypto|forex|ปันผล.*ทุกวัน|ลงทุนน้อย|สัญญาณซื้อขาย|ทีมวิเคราะห์|กลุ่มลงทุน/i},
+  {id:'loan', w:15, label:'กู้เงินง่าย ไม่เช็คเครดิต', desc:'เงินกู้นอกระบบที่ให้โอนค่าดำเนินการก่อนเป็นรูปแบบหลอกลวงที่พบบ่อย',
+   re:/กู้เงิน(ด่วน|ง่าย)|ไม่เช็คเครดิต|ไม่ต้องใช้หลักทรัพย์|อนุมัติทันที|วงเงิน.*อนุมัติ|ดอกเบี้ยต่ำ.*ด่วน/i},
+  {id:'personal', w:16, label:'ขอข้อมูลส่วนตัวหรือการเงิน', desc:'ขอบัตรประชาชน เลขบัตร สำเนาบัตร ข้อมูลบัญชี หรือรูปถ่ายคู่บัตร',
+   re:/บัตรประชาชน|สำเนาบัตร|เลขบัตร|รูปคู่บัตร|ถ่ายคู่บัตร|หน้าบัตร|เลขบัญชีของคุณ|ข้อมูลบัตร(เครดิต|เดบิต)|เลขบัตร(เครดิต|เดบิต)|ยืนยันตัวตน/i},
+  {id:'install', w:24, label:'ให้ติดตั้งแอปหรือไฟล์', desc:'การให้ติดตั้งแอปนอก Store หรือไฟล์ .apk อาจทำให้ถูกควบคุมเครื่องหรือขโมยเงิน',
+   re:/\.apk|ติดตั้งแอป|ดาวน์โหลดแอป|anydesk|teamviewer|แชร์หน้าจอ|ควบคุมเครื่อง/i},
+  {id:'offchat', w:8, label:'ชวนย้ายไปคุยช่องทางส่วนตัว', desc:'ชวนเพิ่มเพื่อน LINE หรือ Telegram เพื่อเลี่ยงการตรวจสอบจากแพลตฟอร์ม',
+   re:/เพิ่มเพื่อน|แอดไลน์|add\s*line|line\s*id|ไลน์\s*:|@[a-z0-9_.]{4,}|telegram|เทเลแกรม|ทักไลน์|ติดต่อไลน์/i}
+];
+
+const SHORTENERS = ['bit.ly','tinyurl.com','cutt.ly','t.ly','s.id','rb.gy','is.gd','shorturl.at','ow.ly','tiny.cc','lin.ee','goo.gl','t.co','rebrand.ly','bit.do','shorte.st'];
+const RISKY_TLD = ['xyz','top','click','icu','vip','work','cfd','sbs','buzz','live','site','online','monster','rest','fit','cyou','bond','today','support','help','link','loan','win','bid','gq','tk','ml','ga','cf'];
+const BRANDS = [
+  {n:'ธนาคารกสิกรไทย',k:['kbank','kasikorn','kplus'],d:['kasikornbank.com','kbank.co.th']},
+  {n:'ธนาคารไทยพาณิชย์',k:['scbeasy','scb'],d:['scb.co.th']},
+  {n:'ธนาคารกรุงไทย',k:['krungthai','ktbnetbank'],d:['krungthai.com']},
+  {n:'ธนาคารกรุงเทพ',k:['bangkokbank','bualuang'],d:['bangkokbank.com']},
+  {n:'ธนาคารกรุงศรี',k:['krungsri'],d:['krungsri.com']},
+  {n:'ธนาคารทหารไทยธนชาต',k:['ttbbank'],d:['ttbbank.com']},
+  {n:'ธนาคารออมสิน',k:['gsb'],d:['gsb.or.th']},
+  {n:'ไปรษณีย์ไทย',k:['thailandpost','thaipost'],d:['thailandpost.co.th','thailandpost.com']},
+  {n:'Kerry Express',k:['kerry'],d:['kerryexpress.com']},
+  {n:'Flash Express',k:['flashexpress'],d:['flashexpress.com','flashexpress.co.th']},
+  {n:'Shopee',k:['shopee'],d:['shopee.co.th','shopee.com']},
+  {n:'Lazada',k:['lazada'],d:['lazada.co.th','lazada.com']},
+  {n:'TrueMoney',k:['truemoney'],d:['truemoney.com']},
+  {n:'กรมสรรพากร',k:['revenue-','rd-go'],d:['rd.go.th']}
+];
+
+/* ---------- extraction ---------- */
+function extractUrls(t){
+  const m = t.match(/(?:https?:\/\/[^\s<>"']+|\b(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s<>"']*)?)/gi) || [];
+  return m.map(u=>u.replace(/[.,;:!?)]+$/,'')).filter(u=>/[a-z]/i.test(u));
+}
+function digits(s){return String(s).replace(/\D/g,'')}
+function extractPhones(t){
+  const m = t.match(/(?:\+\s?\d{1,3}[\s-]?)?\(?\d{2,3}\)?[\s-]?\d{3,4}[\s-]?\d{3,4}/g) || [];
+  return m.map(x=>x.trim()).filter(x=>{const d=digits(x);return d.length>=9&&d.length<=13&&(/^0[2689]/.test(d)||x.trim().startsWith('+')||/^66/.test(d))});
+}
+function extractAccounts(t){
+  const m = t.match(/\b\d{3}-\d-\d{5}-\d\b|\b\d{10,15}\b/g) || [];
+  return m.filter(x=>!/^0[689]\d{8}$/.test(digits(x)));
+}
+const uniq = a => [...new Set(a)];
+
+/* ---------- analyzers ---------- */
+function analyzeUrl(raw){
+  const out=[]; let host='';
+  try{ const u=new URL(/^https?:\/\//i.test(raw)?raw:'https://'+raw);
+    host=u.hostname.toLowerCase().replace(/^www\./,'');
+    if(u.protocol==='http:') out.push({w:8,label:'ลิงก์ไม่เข้ารหัส (http)',desc:'เว็บทางการที่ขอข้อมูลสำคัญมักใช้ https',ev:raw,src:'ลิงก์'});
+    if(u.username||/@/.test(raw.split('?')[0].replace(/^https?:\/\//,'').split('/')[0])) out.push({w:20,label:'ลิงก์มีเครื่องหมาย @ ซ่อนปลายทาง',desc:'ใช้ปลอมให้ดูเหมือนเว็บอื่น',ev:raw,src:'ลิงก์'});
+  }catch(e){ return {host:'',signals:[{w:10,label:'รูปแบบลิงก์ผิดปกติ',desc:'ไม่สามารถอ่านลิงก์นี้ได้อย่างถูกต้อง',ev:raw,src:'ลิงก์'}]}; }
+  const parts=host.split('.'); const tld=parts[parts.length-1];
+  if(SHORTENERS.some(s=>host===s)) out.push({w:18,label:'ลิงก์ย่อ ซ่อนปลายทาง',desc:'ไม่สามารถรู้ได้ว่าลิงก์ไปที่เว็บไหนจริง',ev:host,src:'ลิงก์'});
+  if(/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) out.push({w:26,label:'ใช้เลข IP แทนชื่อเว็บ',desc:'เว็บทางการแทบไม่ใช้เลข IP ตรง ๆ',ev:host,src:'ลิงก์'});
+  if(host.includes('xn--')) out.push({w:22,label:'ชื่อเว็บใช้ตัวอักษรหลอกตา',desc:'อาจเป็นชื่อที่เลียนแบบเว็บจริงด้วยอักขระพิเศษ',ev:host,src:'ลิงก์'});
+  if(RISKY_TLD.includes(tld)) out.push({w:14,label:'นามสกุลโดเมนที่พบในเว็บหลอกลวงบ่อย',desc:'นามสกุล .'+tld+' ราคาถูกและถูกใช้ในเว็บหลอกลวงบ่อย แต่ไม่ได้แปลว่าทุกเว็บเป็นอันตราย',ev:host,src:'ลิงก์'});
+  if((host.match(/-/g)||[]).length>=3) out.push({w:10,label:'ชื่อเว็บมีขีดกลางจำนวนมาก',desc:'มักเป็นชื่อที่ตั้งเลียนแบบเว็บจริง',ev:host,src:'ลิงก์'});
+  if(parts.length>=5) out.push({w:8,label:'ชื่อเว็บมีหลายชั้นผิดปกติ',desc:'ชื่อยาวหลายชั้นอาจใช้ซ่อนโดเมนจริง',ev:host,src:'ลิงก์'});
+  for(const b of BRANDS){
+    const official=b.d.some(d=>host===d||host.endsWith('.'+d));
+    if(!official && b.k.some(k=>host.includes(k))) out.push({w:30,label:'ชื่อเว็บคล้าย '+b.n+' แต่ไม่ใช่โดเมนทางการ',desc:'อาจเป็นเว็บปลอมที่เลียนแบบ โดเมนทางการที่ระบบรู้จักคือ '+b.d.join(', '),ev:host,src:'ลิงก์'});
+  }
+  return {host,signals:out};
+}
+function analyzePhone(p){
+  const d=digits(p), out=[]; const plus=p.trim().startsWith('+');
+  if(plus && !/^\+\s?66/.test(p.trim())) out.push({w:14,label:'เบอร์จากต่างประเทศ',desc:'เบอร์ที่ขึ้นต้นด้วยรหัสประเทศอื่น หากอ้างว่าเป็นหน่วยงานในไทย ควรระวังเป็นพิเศษ',ev:p,src:'เบอร์โทร'});
+  else if(!/^(0[2-9]\d{7,8}|66[2-9]\d{7,8})$/.test(d)) out.push({w:8,label:'รูปแบบเบอร์ไม่ตรงกับเบอร์ไทยทั่วไป',desc:'ตรวจสอบจำนวนหลักและรหัสนำหน้าอีกครั้ง',ev:p,src:'เบอร์โทร'});
+  return out;
+}
+function analyzeSender(s){
+  const out=[];
+  if(/(admin|official|support|service|เจ้าหน้าที่|ฝ่ายบริการ|แอดมิน|ทางการ)/i.test(s) && (/\d{3,}/.test(s)||/[^\u0E00-\u0E7Fa-z0-9\s._-]/i.test(s)))
+    out.push({w:10,label:'ชื่อผู้ส่งอ้างว่าเป็นทางการ แต่มีตัวเลข/สัญลักษณ์แปลก',desc:'บัญชีทางการจริงมักมีชื่อเรียบง่ายและมีเครื่องหมายยืนยันจากแพลตฟอร์ม',ev:s,src:'ชื่อผู้ส่ง'});
+  return out;
+}
+
+/* ---------- main analysis ---------- */
+function analyze(inp){
+  const signals=[]; const cats=new Set();
+  const msg=inp.msg;
+  TEXT_RULES.forEach(r=>{ const m=msg.match(r.re); if(m){ signals.push({w:r.w,label:r.label,desc:r.desc,ev:m[0],src:'ข้อความ'}); cats.add(r.id);} });
+
+  const urls=uniq([...(inp.url?[inp.url]:[]),...extractUrls(msg)]);
+  const phones=uniq([...(inp.phone?[inp.phone]:[]),...extractPhones(msg)]);
+  const accts=uniq([...(inp.acct?[inp.acct]:[]),...extractAccounts(msg)]);
+
+  if(urls.length && msg) signals.push({w:5,label:'มีลิงก์แนบมาในข้อความที่ไม่ได้ร้องขอ',desc:'อย่ากดลิงก์จากข้อความที่คุณไม่ได้คาดหวัง',ev:urls[0],src:'ข้อความ'});
+  urls.forEach(u=>analyzeUrl(u).signals.forEach(s=>{signals.push(s);}));
+  phones.forEach(p=>analyzePhone(p).forEach(s=>signals.push(s)));
+  if(inp.sender) analyzeSender(inp.sender).forEach(s=>signals.push(s));
+  if(accts.length && (cats.has('money')||cats.has('prize')||cats.has('job')||cats.has('invest')||cats.has('loan')))
+    signals.push({w:12,label:'ให้โอนเงินเข้าบัญชีของบุคคลที่ไม่รู้จัก',desc:'มีเลขบัญชีปรากฏพร้อมเนื้อหาที่ชวนให้โอนเงิน',ev:accts[0],src:'เลขบัญชี'});
+
+  let score=signals.reduce((a,s)=>a+s.w,0);
+  if(cats.size>=3) score+=10;
+  if(cats.size>=5) score+=10;
+  score=Math.min(100,Math.round(score));
+  const level = score>=60?'HIGH_RISK':score>=25?'SUSPICIOUS':'SAFE';
+  signals.sort((a,b)=>b.w-a.w);
+  return {signals,score,level,urls,phones,accts};
+}
+
+/* ---------- rendering ---------- */
+const LV={
+  SAFE:{cls:'safe',icon:'✅',th:'ยังไม่พบสัญญาณเสี่ยงชัดเจน',head:'ไม่พบสัญญาณหลอกลวงที่ชัดเจนในข้อมูลที่ตรวจ',
+        say:'ระบบไม่พบรูปแบบหลอกลวงที่รู้จักในข้อมูลนี้ แต่ไม่ได้แปลว่าปลอดภัย 100% หากมีใครขอเงินหรือข้อมูลส่วนตัว ให้ตรวจสอบกับต้นทางจริงก่อนเสมอ'},
+  SUSPICIOUS:{cls:'warn',icon:'⚠️',th:'น่าสงสัย',head:'มีสัญญาณที่น่าสงสัย ควรระวัง',
+        say:'พบสัญญาณบางอย่างที่คล้ายการหลอกลวง ยังสรุปไม่ได้ว่าเป็นมิจฉาชีพ แต่ไม่ควรโอนเงิน กดลิงก์ หรือให้ข้อมูลใด ๆ จนกว่าจะตรวจสอบกับต้นทางจริง'},
+  HIGH_RISK:{cls:'high',icon:'🚨',th:'เสี่ยงสูง',head:'มีความเสี่ยงสูงที่จะเป็นการหลอกลวง',
+        say:'พบสัญญาณหลอกลวงหลายอย่างพร้อมกัน ขอแนะนำให้หยุดติดต่อ ไม่กดลิงก์ ไม่โอนเงิน และไม่ให้ข้อมูลใด ๆ ทันที'}
+};
+
+function verifyLinks(kind,val){
+  const v=encodeURIComponent(val);
+  if(kind==='url') return `<a href="https://transparencyreport.google.com/safe-browsing/search?url=${v}" target="_blank" rel="noopener noreferrer">Google Safe Browsing</a><a href="https://www.virustotal.com/gui/home/url" target="_blank" rel="noopener noreferrer">VirusTotal</a>`;
+  return `<a href="https://www.blacklistseller.com/" target="_blank" rel="noopener noreferrer">Blacklistseller</a><a href="https://www.chaladohn.com/" target="_blank" rel="noopener noreferrer">ฉลาดโอน</a><a href="https://www.thaipoliceonline.go.th/" target="_blank" rel="noopener noreferrer">Thai Police Online</a>`;
+}
+
+function render(inp,r){
+  const L=LV[r.level];
+  const hitCount=r.signals.length;
+  const rows=[
+    ...r.urls.map(v=>['ลิงก์',v,'url']),
+    ...r.phones.map(v=>['เบอร์โทร',v,'phone']),
+    ...r.accts.map(v=>['เลขบัญชี',v,'acct'])
+  ];
+  const tblRows=rows.length?rows.map(([t,v,k])=>`<tr><td>${t}</td><td style="word-break:break-all">${esc(v)}</td><td>ไม่พบข้อมูลเพียงพอสำหรับการยืนยัน</td><td>${verifyLinks(k,v)}</td></tr>`).join('')
+    :`<tr><td colspan="4">${NONE}</td></tr>`;
+
+  const sigHtml=hitCount?r.signals.map(s=>`<li class="${s.w>=18?'hit':'mid'}"><b>${esc(s.label)}<span class="tag">${esc(s.src)}</span></b><span>${esc(s.desc)}</span>${s.ev?`<br><span>ที่พบ: <em>${esc(String(s.ev).slice(0,90))}</em></span>`:''}</li>`).join(''):`<li><span>${NONE}</span></li>`;
+
+  const reasons=hitCount?r.signals.slice(0,5).map(s=>`<li>${esc(s.label)}</li>`).join(''):`<li>${NONE}</li>`;
+
+  $('result').innerHTML=`
+  <section id="analysis-result" class="card hero ${L.cls}" style="padding:24px">
+    <div id="risk-score">
+      <div class="gauge" role="img" aria-label="คะแนนความเสี่ยง ${r.score} จาก 100">
+        <svg viewBox="0 0 220 125"><path class="track" d="M20 110 A90 90 0 0 1 200 110" fill="none" stroke-width="18" stroke-linecap="round"/><path class="fill" id="fill" d="M20 110 A90 90 0 0 1 200 110" fill="none" stroke-width="18" stroke-linecap="round" stroke-dasharray="${ARC}" stroke-dashoffset="${ARC}"/></svg>
+        <div class="num"><b>${r.score}</b><span>คะแนนความเสี่ยง (0-100)</span></div>
+      </div>
+      <div class="bar"><i id="barfill"></i></div>
+      <div class="scale"><span>0 ปลอดภัย</span><span>25</span><span>60</span><span>100 อันตราย</span></div>
+    </div>
+    <div>
+      <div class="badge"><span aria-hidden="true">${L.icon}</span>${r.level} · ${L.th}</div>
+      <h2>${L.head}</h2>
+      <p>${L.say}</p>
+      <p style="color:var(--muted);font-size:.9rem;margin:0">เกณฑ์: 0-24 SAFE · 25-59 SUSPICIOUS · 60-100 HIGH_RISK</p>
+    </div>
+  </section>
+
+  <div class="grid">
+    <section id="input-information" class="card">
+      <h2>Input Information<small>ข้อมูลที่ตรวจสอบ</small></h2>
+      <dl class="kv">
+        <dt>ข้อความ</dt><dd>${inp.msg?esc(inp.msg.length>220?inp.msg.slice(0,220)+'…':inp.msg):NONE}</dd>
+        <dt>ลิงก์</dt><dd>${r.urls.length?r.urls.map(esc).join('<br>'):NONE}</dd>
+        <dt>ชื่อผู้ส่ง</dt><dd>${inp.sender?esc(inp.sender):NONE}</dd>
+        <dt>เบอร์โทร</dt><dd>${r.phones.length?r.phones.map(esc).join('<br>'):NONE}</dd>
+        <dt>เลขบัญชี</dt><dd>${r.accts.length?r.accts.map(esc).join('<br>'):NONE}</dd>
+        <dt>ไฟล์</dt><dd>${NONE}</dd>
+      </dl>
+    </section>
+
+    <section id="risk-reasons" class="card">
+      <h2>Risk Reasons<small>เหตุผลที่ให้คะแนนนี้</small></h2>
+      <ul class="steps">${reasons}</ul>
+      <p class="note">คะแนนมาจากการนับสัญญาณที่พบและน้ำหนักของแต่ละสัญญาณ ไม่ได้มาจากฐานข้อมูลมิจฉาชีพ</p>
+    </section>
+
+    <section id="scam-signals" class="card full">
+      <h2>Scam Signals<small>พบ ${hitCount} สัญญาณ</small></h2>
+      <ul class="list">${sigHtml}</ul>
+    </section>
+
+    <section id="verification-results" class="card full">
+      <h2>Verification Results<small>ผลตรวจสอบจากแหล่งข้อมูล</small></h2>
+      <div class="tbl"><table>
+        <thead><tr><th>ประเภท</th><th>ค่าที่ตรวจ</th><th>ผลจากฐานข้อมูล</th><th>ตรวจเองได้ที่</th></tr></thead>
+        <tbody>${tblRows}</tbody>
+      </table></div>
+      <p class="note">เว็บนี้ทำงานในเบราว์เซอร์และยังไม่ได้ค้นฐานข้อมูล Blacklist ให้อัตโนมัติ จึงไม่แสดงผลตรวจสอบที่ไม่มีอยู่จริง กรุณากดลิงก์ด้านขวาเพื่อค้นด้วยตัวเอง</p>
+    </section>
+
+    <section id="recommendation" class="card full">
+      <h2>Recommendation<small>สิ่งที่ควรทำ</small></h2>
+      <p class="donts">❌ อย่ากดลิงก์ · อย่าให้ข้อมูลส่วนตัว · อย่าโอนเงิน · อย่าบอก OTP หรือรหัสใด ๆ</p>
+      <ol class="steps">
+        <li>หยุดตอบกลับ และอย่าทำตามคำสั่งในข้อความ</li>
+        <li>ติดต่อหน่วยงานหรือธนาคารตัวจริงผ่านเบอร์ที่ระบุบนเว็บไซต์ทางการหรือหลังบัตรของคุณ</li>
+        <li>นำลิงก์ที่สงสัยไปตรวจเพิ่มที่ Google Safe Browsing หรือ VirusTotal โดยไม่ต้องเปิดลิงก์เอง</li>
+        <li>หากไฟล์ที่ได้รับสงสัย (เช่น .apk) ให้อัปโหลดตรวจที่ VirusTotal และอย่าติดตั้ง</li>
+        <li>หากโอนเงินหรือให้ข้อมูลไปแล้ว ให้โทรแจ้งธนาคารทันที และแจ้งความออนไลน์ที่ thaipoliceonline.go.th หรือโทร 1441</li>
+      </ol>
+    </section>
+
+    <section id="evidence-sources" class="card full">
+      <h2>Evidence / Sources<small>หลักฐานและแหล่งอ้างอิง</small></h2>
+      <div class="split">
+        <div><h3>ข้อมูลที่ตรวจพบจากแหล่งข้อมูล</h3>${NONE}<p class="note" style="margin:8px 0 0">ไม่พบข้อมูลเพียงพอสำหรับการยืนยัน (ยังไม่ได้ค้นแหล่งภายนอกอัตโนมัติ)</p></div>
+        <div><h3>การวิเคราะห์ของระบบ</h3><span>ตรวจจากคำสำคัญ รูปแบบลิงก์ และรูปแบบเบอร์/บัญชี ด้วยกฎที่ตั้งไว้ในเบราว์เซอร์ พบ ${hitCount} สัญญาณ</span></div>
+      </div>
+    </section>
+
+    <section id="disclaimer" class="card full">
+      <h2>Disclaimer</h2>
+      <p style="margin:0">ผลนี้เป็นการประเมินความเสี่ยงเบื้องต้นเท่านั้น ไม่ใช่การยืนยันว่าข้อความ บุคคล บัญชี เบอร์โทร หรือเว็บไซต์ใดเป็นมิจฉาชีพ หรือปลอดภัยอย่างแน่นอน หากไม่แน่ใจ ให้ตรวจสอบกับหน่วยงานที่เกี่ยวข้องโดยตรง</p>
+    </section>
+  </div>`;
+
+  $('result').classList.add('on');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    $('fill').style.strokeDashoffset=ARC*(1-r.score/100);
+    $('barfill').style.width=r.score+'%';
+  }));
+  $('analysis-result').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ---------- events ---------- */
+$('form').addEventListener('submit',e=>{
+  e.preventDefault();
+  const inp={msg:$('msg').value.trim(),url:$('url').value.trim(),sender:$('sender').value.trim(),phone:$('phone').value.trim(),acct:$('acct').value.trim()};
+  if(!Object.values(inp).some(Boolean)){ $('err').textContent='กรุณากรอกข้อมูลอย่างน้อย 1 ช่อง เช่น ข้อความหรือลิงก์'; return; }
+  $('err').textContent='';
+  render(inp,analyze(inp));
+});
+$('clear').addEventListener('click',()=>{
+  ['msg','url','sender','phone','acct'].forEach(i=>$(i).value='');
+  $('err').textContent=''; $('result').classList.remove('on'); $('result').innerHTML='';
+});
+</script>
+</body>
+</html>
