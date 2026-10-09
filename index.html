@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Anti-Scam Detector & Risk Assessment</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .risk-gauge { transition: stroke-dashoffset 1s ease-in-out; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8">
+    <div class="max-w-4xl mx-auto space-y-6">
+        
+        <!-- Header -->
+        <header class="text-center space-y-2">
+            <h1 class="text-3xl md:text-4xl font-bold text-sky-400">
+                <i class="fa-solid fa-shield-halved mr-2"></i>ระบบประเมินความเสี่ยง Scam
+            </h1>
+            <p class="text-slate-400 text-sm md:text-base">ตรวจสอบข้อความ ลิงก์ เบอร์โทรศัพท์ หรือเลขบัญชีน่าสงสัยด้วย AI</p>
+        </header>
+
+        <!-- Input Section -->
+        <section class="bg-slate-800 rounded-xl p-6 shadow-xl border border-slate-700 space-y-4">
+            <label class="block font-medium text-slate-200">ป้อนข้อมูลที่ต้องการตรวจสอบ:</label>
+            <textarea id="inputText" rows="4" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-100 focus:outline-none focus:border-sky-500 transition" placeholder="วางข้อความ SMS, เบอร์โทรศัพท์, เลขบัญชี, URL หรือชื่อผู้ส่งที่นี่..."></textarea>
+            <button onclick="analyzeData()" id="submitBtn" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-semibold py-3 rounded-lg transition duration-200 flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <span>วิเคราะห์ความเสี่ยง</span>
+            </button>
+        </section>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="hidden text-center py-8 space-y-3">
+            <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-sky-500 border-t-transparent"></div>
+            <p class="text-slate-400">กำลังวิเคราะห์ข้อมูลตามหลักวิศวกรรมความมั่นคงปลอดภัย...</p>
+        </div>
+
+        <!-- Result Dashboard -->
+        <div id="dashboard" class="hidden space-y-6">
+            
+            <!-- Main Risk Status & Score -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Status Card -->
+                <div id="statusBadge" class="bg-slate-800 rounded-xl p-6 border border-slate-700 flex flex-col items-center justify-center text-center space-y-2 md:col-span-1">
+                    <span class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Analysis Result</span>
+                    <div id="levelIcon" class="text-5xl my-2"></div>
+                    <div id="riskLevelText" class="text-2xl font-bold"></div>
+                </div>
+
+                <!-- Score Gauge -->
+                <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 flex flex-col items-center justify-center md:col-span-2 space-y-2">
+                    <span class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Risk Score</span>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-5xl font-black" id="scoreNumber">0</div>
+                        <div class="text-slate-400 text-xl font-bold">/ 100</div>
+                    </div>
+                    <div class="w-full bg-slate-700 h-4 rounded-full overflow-hidden mt-3">
+                        <div id="scoreBar" class="h-full transition-all duration-1000 w-0"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- Input Information -->
+                <div class="bg-slate-800 rounded-xl p-5 border border-slate-700 space-y-2">
+                    <h3 class="text-sky-400 font-bold flex items-center"><i class="fa-solid fa-file-lines mr-2"></i>Input Information</h3>
+                    <p id="resInput" class="text-slate-300 text-sm whitespace-pre-wrap bg-slate-900/50 p-3 rounded border border-slate-800"></p>
+                </div>
+
+                <!-- Scam Signals -->
+                <div class="bg-slate-800 rounded-xl p-5 border border-slate-700 space-y-2">
+                    <h3 class="text-amber-400 font-bold flex items-center"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Scam Signals</h3>
+                    <ul id="resSignals" class="list-disc list-inside text-slate-300 text-sm space-y-1"></ul>
+                </div>
+
+                <!-- Verification Results -->
+                <div class="bg-slate-800 rounded-xl p-5 border border-slate-700 space-y-2">
+                    <h3 class="text-indigo-400 font-bold flex items-center"><i class="fa-solid fa-database mr-2"></i>Verification Results</h3>
+                    <p id="resVerification" class="text-slate-300 text-sm bg-slate-900/50 p-3 rounded border border-slate-800"></p>
+                </div>
+
+                <!-- Risk Reasons -->
+                <div class="bg-slate-800 rounded-xl p-5 border border-slate-700 space-y-2">
+                    <h3 class="text-rose-400 font-bold flex items-center"><i class="fa-solid fa-circle-nodes mr-2"></i>Risk Reasons</h3>
+                    <ul id="resReasons" class="list-disc list-inside text-slate-300 text-sm space-y-1"></ul>
+                </div>
+
+            </div>
+
+            <!-- Recommendation -->
+            <div class="bg-slate-800 rounded-xl p-5 border border-slate-700 space-y-3">
+                <h3 class="text-emerald-400 font-bold flex items-center"><i class="fa-solid fa-user-shield mr-2"></i>Recommendation</h3>
+                <div id="resRecommendation" class="text-slate-200 text-sm space-y-2"></div>
+            </div>
+
+            <!-- Evidence & Sources -->
+            <div class="bg-slate-800 rounded-xl p-5 border border-slate-700 space-y-2">
+                <h3 class="text-slate-400 font-bold text-xs uppercase tracking-wider flex items-center"><i class="fa-solid fa-link mr-2"></i>Evidence / Sources</h3>
+                <p id="resSources" class="text-slate-400 text-xs italic bg-slate-900/30 p-2 rounded"></p>
+            </div>
+
+            <!-- Disclaimer -->
+            <div class="bg-slate-900/80 rounded-xl p-4 border border-amber-500/20 text-amber-300/80 text-xs space-y-1">
+                <p class="font-bold"><i class="fa-solid fa-circle-info mr-1"></i>Disclaimer:</p>
+                <p id="resDisclaimer">ผลการวิเคราะห์นี้จัดทำโดยระบบปัญญาประดิษฐ์ (AI) เพื่อเป็นข้อมูลประกอบการตัดสินใจเบื้องต้นเท่านั้น ไม่ถือเป็นคำตัดสินทางกฎหมายหรือการรับประกันความปลอดภัย 100%</p>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        async function analyzeData() {
+            const input = document.getElementById('inputText').value.trim();
+            if (!input) return alert('กรุณาป้อนข้อมูลที่ต้องการตรวจสอบ');
+
+            const loading = document.getElementById('loading');
+            const dashboard = document.getElementById('dashboard');
+            const submitBtn = document.getElementById('submitBtn');
+
+            loading.classList.remove('hidden');
+            dashboard.classList.add('hidden');
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data: input })
+                });
+
+                const result = await response.json();
+                renderDashboard(result);
+            } catch (err) {
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อระบบวิเคราะห์: ' + err.message);
+            } finally {
+                loading.classList.add('hidden');
+                submitBtn.disabled = false;
+            }
+        }
+
+        function renderDashboard(data) {
+            document.getElementById('resInput').textContent = data.input_information || 'ไม่มีข้อมูล';
+            document.getElementById('scoreNumber').textContent = data.risk_score || 0;
+            
+            const scoreBar = document.getElementById('scoreBar');
+            scoreBar.style.width = `${data.risk_score || 0}%`;
+
+            const levelText = document.getElementById('riskLevelText');
+            const levelIcon = document.getElementById('levelIcon');
+            const statusBadge = document.getElementById('statusBadge');
+
+            if (data.risk_level === 'HIGH_RISK') {
+                levelText.textContent = 'HIGH RISK';
+                levelText.className = 'text-2xl font-bold text-rose-500';
+                levelIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-rose-500"></i>';
+                scoreBar.className = 'h-full transition-all duration-1000 bg-rose-500';
+            } else if (data.risk_level === 'SUSPICIOUS') {
+                levelText.textContent = 'SUSPICIOUS';
+                levelText.className = 'text-2xl font-bold text-amber-500';
+                levelIcon.innerHTML = '<i class="fa-solid fa-circle-exclamation text-amber-500"></i>';
+                scoreBar.className = 'h-full transition-all duration-1000 bg-amber-500';
+            } else {
+                levelText.textContent = 'SAFE';
+                levelText.className = 'text-2xl font-bold text-emerald-500';
+                levelIcon.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-500"></i>';
+                scoreBar.className = 'h-full transition-all duration-1000 bg-emerald-500';
+            }
+
+            // Render Lists
+            renderList('resSignals', data.scam_signals);
+            renderList('resReasons', data.risk_reasons);
+            
+            document.getElementById('resVerification').textContent = data.verification_results || 'ไม่พบข้อมูลเพียงพอสำหรับการยืนยัน';
+            
+            const recContainer = document.getElementById('resRecommendation');
+            recContainer.innerHTML = `
+                <p>• ${data.recommendation?.actions || 'ไม่มีข้อแนะนำเพิ่มเติม'}</p>
+                <p class="text-rose-400 font-semibold">• ${data.recommendation?.warning || 'ห้ามคลิกลิงก์ ให้ข้อมูลส่วนตัว หรือข้อมูลทางการเงินโดยเด็ดขาด'}</p>
+            `;
+
+            document.getElementById('resSources').textContent = data.evidence_sources || 'ไม่พบข้อมูลเพียงพอสำหรับการยืนยัน';
+            
+            document.getElementById('dashboard').classList.remove('hidden');
+        }
+
+        function renderList(elementId, items) {
+            const ul = document.getElementById(elementId);
+            ul.innerHTML = '';
+            if (Array.isArray(items) && items.length > 0) {
+                items.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item;
+                    ul.appendChild(li);
+                });
+            } else {
+                ul.innerHTML = '<li>ไม่มีข้อมูล</li>';
+            }
+        }
+    </script>
+</body>
+</html>
