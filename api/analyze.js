@@ -35,7 +35,8 @@ export default async function handler(req, res) {
     `;
 
     try {
-       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        // ใช้รุ่น gemini-1.5-flash หรือ gemini-2.0-flash ที่รองรับการประมวลผล
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -50,10 +51,11 @@ export default async function handler(req, res) {
 
         const apiData = await response.json();
 
+        // ตรวจสอบว่า API ส่ง Error กลับมาหรือไม่
         if (!response.ok) {
             return res.status(response.status).json({ 
                 error: 'Gemini API Error', 
-                details: apiData.error?.message || 'Unknown error' 
+                details: apiData.error?.message || 'Unknown API Error' 
             });
         }
 
